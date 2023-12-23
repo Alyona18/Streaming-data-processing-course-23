@@ -4,7 +4,17 @@ from datetime import datetime
 import asyncio
 import pandas as pd
 import os
+import pyarrow as pa
+import pyarrow.parquet as pq
+from pyspark.sql.types import StructType, StructField, StringType, TimestampType
 
+
+schema = pa.schema([
+    ('time', pa.timestamp('ns')),
+    ('source', pa.string()),
+    ('text', pa.string()),
+    ('has_media', pa.string())
+])
 
 accumulation_interval_minutes = 1
 
@@ -14,9 +24,9 @@ if os.path.exists(session_file):
     os.remove(session_file)
 
 
-api_id =  'API_id'
+api_id = 'API_id'
 api_hash =  'API_hash'
-channel_username = "Target_Chanel_Username"
+channel_username = "Target"
 
 def get_filename():
     current_time = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -31,7 +41,16 @@ async def save_messages(messages, filename):
     }
 
     df = pd.DataFrame(data)
-    df.to_parquet(filename, index=False, mode='append')
+
+    # Если файл существует, загрузим его
+    if os.path.exists(filename):
+        table = pq.read_table(filename)
+        # Добавим новые данные к существующим данным
+        df = pd.concat([table.to_pandas(), df], ignore_index=True)
+
+    # Запишем DataFrame в файл Parquet
+    table = pa.Table.from_pandas(df, schema=schema)
+    pq.write_table(table, filename)
     
 async def main():
     client = TelegramClient('my_session', api_id, api_hash)
