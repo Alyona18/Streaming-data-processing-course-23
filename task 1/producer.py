@@ -23,19 +23,26 @@ def generate_sensor_data(sensor_type, sensor_name):
 
 def produce_message(sensor_type, sensor_name):
     data = generate_sensor_data(sensor_type, sensor_name)
-    producer.produce('sensor_data_topic', key=sensor_name, value=json.dumps(data))
+    print(data)
+    producer.produce('new_sensor_data_topic', value=json.dumps(data))
     producer.flush()
 
-def simulate_sensor(sensor_type, sensor_name, delay, distribution):
-    while True:
+def simulate_sensor(sensor_type, sensor_name, delay, count = 2):
+    while count > 0:
         produce_message(sensor_type, sensor_name)
+        count -= 1
         time.sleep(delay)
 
 if __name__ == '__main__':
     sensor_params = [
-        {'type': 'temperature', 'name': 'temperature_sensor_1', 'delay': 5, 'distribution': 'normal'},
-        {'type': 'pressure', 'name': 'pressure_sensor_1', 'delay': 10, 'distribution': 'uniform'}
+    {'type': 'temperature', 'delay': 3},
+    {'type': 'pressure', 'delay': 2},
+    {'type': 'position', 'delay': 3},
+    {'type': 'pressure', 'delay': 4},
+    {'type': 'temperature', 'delay': 3}    
     ]
 
-    for params in sensor_params:
-        simulate_sensor(params['type'], params['name'], params['delay'], params['distribution'])
+    while True:
+       params = random.choice(sensor_params)
+       fake_sensor_name = fake.word()
+       simulate_sensor(params['type'], fake_sensor_name, params['delay'])
